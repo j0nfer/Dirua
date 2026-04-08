@@ -19,7 +19,6 @@ h1{background:#1F3864;color:white;text-align:center;padding:14px;font-size:1rem;
 .total-box .sublabel{font-size:.7rem;opacity:.6;}
 .accounts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
 .acc-card{border-radius:10px;padding:10px;color:white;position:relative;}
-.acc-card.full-width{grid-column:1/-1;}
 .acc-name-input{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.4);color:white;font-size:.75rem;font-weight:bold;width:100%;margin-bottom:4px;outline:none;text-transform:uppercase;letter-spacing:.5px;}
 .acc-name-input::placeholder{color:rgba(255,255,255,.5);}
 .acc-val-input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:white;font-size:1.1rem;font-weight:bold;width:100%;padding:3px 6px;outline:none;}
@@ -32,7 +31,7 @@ h1{background:#1F3864;color:white;text-align:center;padding:14px;font-size:1rem;
 .btn-row{display:flex;gap:8px;}
 .btn-row .btn{margin:10px 0;}
 .table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.1);}
-table{width:100%;border-collapse:collapse;font-size:.72rem;background:white;min-width:400px;}
+table{width:100%;border-collapse:collapse;font-size:.72rem;background:white;min-width:360px;}
 th{background:#1F3864;color:white;padding:8px 4px;text-align:center;white-space:nowrap;}
 td{padding:7px 4px;text-align:center;border-bottom:1px solid #eee;}
 tr:nth-child(even) td{background:#f7f9fc;}
@@ -105,7 +104,7 @@ const html=`
 </div>
 ${renderChart(hist)}
 <div class="accounts">
-${cur.map((v,i)=>`<div class="acc-card${i===cur.length-1&&cur.length%2!==0?' full-width':''}" style="background:${COLORS[i]}"><input class="acc-name-input" value="${names[i]}" maxlength="12" onchange="updateName(${i},this.value)" placeholder="Cuenta ${i+1}"/><input class="acc-val-input" type="number" value="${v}" inputmode="numeric" onchange="updateVal('${p}',${i},this.value)" onfocus="this.select()"/><div class="acc-pct">${((v/total)*100).toFixed(1)}% del total</div></div>`).join('')}
+${cur.map((v,i)=>`<div class="acc-card" style="background:${COLORS[i]}"><input class="acc-name-input" value="${names[i]}" maxlength="12" onchange="updateName(${i},this.value)" placeholder="Cuenta ${i+1}"/><input class="acc-val-input" type="number" value="${v}" inputmode="numeric" onchange="updateVal('${p}',${i},this.value)" onfocus="this.select()"/><div class="acc-pct">${((v/total)*100).toFixed(1)}% del total</div></div>`).join('')}
 </div>
 <div class="btn-row">
 <button class="btn btn-green" onclick="addEntry('${p}')">➕ Registrar ${label}</button>
@@ -117,6 +116,7 @@ ${hist.length>1?`<button class="btn btn-red" style="flex:0 0 44px;padding:0" onc
 </table></div>
 <button class="btn" style="background:#6c757d;margin-top:12px;font-size:.8rem" onclick="toggleExport('${p}')">📤 Exportar CSV</button>
 <div class="export-area" id="export-${p}">${buildCSV(hist)}</div>
+<button class="btn" style="background:#c0392b;margin-top:8px;font-size:.75rem" onclick="resetAll()">🔄 Reset datos Dirua</button>
 <p class="save-note">💾 Datos guardados localmente en este dispositivo</p>`;
 document.getElementById(p==='s'?'semanal':'mensual').innerHTML=html;}
 function renderChart(hist){if(hist.length<2)return'';const recent=hist.slice(-8);const vals=recent.map(r=>r.total);const mx=Math.max(...vals);const mn=Math.min(...vals);const range=mx-mn||1;const bars=recent.map((r,i)=>{const h=Math.max(8,((r.total-mn)/range)*42+8);const isLast=i===recent.length-1;return`<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div class="bar" style="height:${h}px;background:${isLast?'#27ae60':'#4472C4'};width:100%"></div><div class="bar-label">${r.period.substring(0,4)}</div></div>`;}).join('');return`<div class="chart-wrap"><div class="chart-title">📈 Evolución del Total</div><div class="sparkline">${bars}</div></div>`;}
@@ -128,6 +128,7 @@ function addEntry(p){const hist=p==='s'?histS:histM;const cur=p==='s'?curS:curM;
 function deleteLastEntry(p){const hist=p==='s'?histS:histM;if(hist.length<=1){toast('⚠️ No se puede borrar el primero');return;}if(!confirm('¿Borrar el último registro?'))return;hist.pop();save('hist_'+p,hist);toast('🗑️ Eliminado');renderSection(p);}
 function showTab(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab')[id==='semanal'?0:1].classList.add('active');}
 function renderBoth(){renderSection('s');renderSection('m');}
+function resetAll(){if(!confirm('¿Resetear todos los datos de Dirua?'))return;['acc_names','cur_s','cur_m','hist_s','hist_m'].forEach(k=>localStorage.removeItem(k));names=[...DEFAULT_NAMES];curS=[...INIT_VAL];curM=[...INIT_VAL];histS=[makeEntry('S1 ('+new Date().toLocaleDateString('es-ES')+')',INIT_VAL)];histM=[makeEntry(new Date().toLocaleDateString('es-ES',{month:'short',year:'numeric'}),INIT_VAL)];toast('✅ Datos reseteados');renderBoth();}
 renderSection('s');renderSection('m');
 </script>
 </body>
