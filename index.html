@@ -19,6 +19,7 @@ h1{background:#1F3864;color:white;text-align:center;padding:14px;font-size:1rem;
 .total-box .sublabel{font-size:.7rem;opacity:.6;}
 .accounts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
 .acc-card{border-radius:10px;padding:10px;color:white;position:relative;}
+.acc-card.full-width{grid-column:1/-1;}
 .acc-name-input{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.4);color:white;font-size:.75rem;font-weight:bold;width:100%;margin-bottom:4px;outline:none;text-transform:uppercase;letter-spacing:.5px;}
 .acc-name-input::placeholder{color:rgba(255,255,255,.5);}
 .acc-val-input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:white;font-size:1.1rem;font-weight:bold;width:100%;padding:3px 6px;outline:none;}
@@ -31,7 +32,7 @@ h1{background:#1F3864;color:white;text-align:center;padding:14px;font-size:1rem;
 .btn-row{display:flex;gap:8px;}
 .btn-row .btn{margin:10px 0;}
 .table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.1);}
-table{width:100%;border-collapse:collapse;font-size:.72rem;background:white;min-width:360px;}
+table{width:100%;border-collapse:collapse;font-size:.72rem;background:white;min-width:400px;}
 th{background:#1F3864;color:white;padding:8px 4px;text-align:center;white-space:nowrap;}
 td{padding:7px 4px;text-align:center;border-bottom:1px solid #eee;}
 tr:nth-child(even) td{background:#f7f9fc;}
@@ -64,9 +65,9 @@ tr:last-child td{background:#e8f4fd;font-weight:bold;}
 <div id="mensual" class="section"></div>
 <div class="toast" id="toast"></div>
 <script>
-const DEFAULT_NAMES=['Cuenta A','Cuenta B','Cuenta C','Cuenta D','Cuenta E','Cuenta F'];
-const COLORS=['#4472C4','#ED7D31','#70AD47','#c0392b','#7030A0','#00B0F0'];
-const INIT_VAL=[1614,2650,1842,325,262,2558];
+const DEFAULT_NAMES=['Cuenta A','Cuenta B','Cuenta C','Cuenta D','Cuenta E','Cuenta F','PL Market'];
+const COLORS=['#4472C4','#ED7D31','#70AD47','#c0392b','#7030A0','#00B0F0','#f39c12'];
+const INIT_VAL=[1614,2650,1842,325,262,2558,484];
 const PERIODS={s:'Semana',m:'Mes'};
 function load(key,def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch(e){return def;}}
 function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
@@ -104,7 +105,7 @@ const html=`
 </div>
 ${renderChart(hist)}
 <div class="accounts">
-${cur.map((v,i)=>`<div class="acc-card" style="background:${COLORS[i]}"><input class="acc-name-input" value="${names[i]}" maxlength="12" onchange="updateName(${i},this.value)" placeholder="Cuenta ${i+1}"/><input class="acc-val-input" type="number" value="${v}" inputmode="numeric" onchange="updateVal('${p}',${i},this.value)" onfocus="this.select()"/><div class="acc-pct">${((v/total)*100).toFixed(1)}% del total</div></div>`).join('')}
+${cur.map((v,i)=>`<div class="acc-card${i===cur.length-1&&cur.length%2!==0?' full-width':''}" style="background:${COLORS[i]}"><input class="acc-name-input" value="${names[i]}" maxlength="12" onchange="updateName(${i},this.value)" placeholder="Cuenta ${i+1}"/><input class="acc-val-input" type="number" value="${v}" inputmode="numeric" onchange="updateVal('${p}',${i},this.value)" onfocus="this.select()"/><div class="acc-pct">${((v/total)*100).toFixed(1)}% del total</div></div>`).join('')}
 </div>
 <div class="btn-row">
 <button class="btn btn-green" onclick="addEntry('${p}')">➕ Registrar ${label}</button>
