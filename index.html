@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Dirua — Patrimonio</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f0f4f8;color:#1a1a2e;padding-bottom:40px;}
+h1{background:#1F3864;color:white;text-align:center;padding:14px;font-size:1rem;letter-spacing:.5px;}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #1F3864;position:sticky;top:0;z-index:10;}
+.tab{flex:1;padding:11px;text-align:center;cursor:pointer;font-weight:bold;font-size:.85rem;color:#888;transition:all .2s;}
+.tab.active{background:#1F3864;color:white;}
+.section{display:none;padding:12px;}
+.section.active{display:block;}
+.total-box{background:linear-gradient(135deg,#1F3864,#2e5597);color:white;border-radius:12px;padding:16px;text-align:center;margin-bottom:12px;box-shadow:0 3px 10px rgba(31,56,100,.3);}
+.total-box .label{font-size:.75rem;opacity:.8;text-transform:uppercase;letter-spacing:1px;}
+.total-box .amount{font-size:2.2rem;font-weight:bold;margin:4px 0;}
+.total-box .sublabel{font-size:.7rem;opacity:.6;}
+.accounts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.acc-card{border-radius:10px;padding:10px;color:white;position:relative;}
+.acc-name-input{background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.4);color:white;font-size:.75rem;font-weight:bold;width:100%;margin-bottom:4px;outline:none;text-transform:uppercase;letter-spacing:.5px;}
+.acc-name-input::placeholder{color:rgba(255,255,255,.5);}
+.acc-val-input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:6px;color:white;font-size:1.1rem;font-weight:bold;width:100%;padding:3px 6px;outline:none;}
+.acc-val-input:focus{background:rgba(255,255,255,.25);}
+.acc-pct{font-size:.65rem;opacity:.7;margin-top:3px;text-align:right;}
+.btn{display:block;width:100%;margin:10px 0;padding:12px;background:#1F3864;color:white;border:none;border-radius:10px;font-size:.95rem;cursor:pointer;font-weight:bold;transition:opacity .2s;}
+.btn:active{opacity:.8;}
+.btn-green{background:#27ae60;}
+.btn-red{background:#c0392b;}
+.btn-row{display:flex;gap:8px;}
+.btn-row .btn{margin:10px 0;}
+.table-wrap{overflow-x:auto;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+table{width:100%;border-collapse:collapse;font-size:.72rem;background:white;min-width:360px;}
+th{background:#1F3864;color:white;padding:8px 4px;text-align:center;white-space:nowrap;}
+td{padding:7px 4px;text-align:center;border-bottom:1px solid #eee;}
+tr:nth-child(even) td{background:#f7f9fc;}
+tr:last-child td{background:#e8f4fd;font-weight:bold;}
+.var-pos{color:#27ae60;font-weight:bold;}
+.var-neg{color:#e74c3c;font-weight:bold;}
+.var-neu{color:#888;}
+.chart-wrap{background:white;border-radius:10px;padding:12px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.1);}
+.chart-title{font-size:.75rem;font-weight:bold;color:#1F3864;margin-bottom:8px;text-transform:uppercase;}
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:50px;}
+.bar{flex:1;border-radius:3px 3px 0 0;min-height:4px;transition:height .3s;}
+.bar-label{font-size:.6rem;color:#888;text-align:center;margin-top:3px;}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.stat-card{background:white;border-radius:10px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.stat-val{font-size:1.1rem;font-weight:bold;color:#1F3864;}
+.stat-label{font-size:.65rem;color:#888;text-transform:uppercase;letter-spacing:.5px;}
+.export-area{background:#f8f9fa;border:1px dashed #ccc;border-radius:8px;padding:8px;font-size:.65rem;color:#666;margin-top:8px;word-break:break-all;max-height:80px;overflow-y:auto;display:none;}
+.save-note{font-size:.7rem;color:#aaa;text-align:center;margin-top:10px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:10px 20px;border-radius:20px;font-size:.85rem;font-weight:bold;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<h1>💰 DIRUA — Seguimiento de Patrimonio</h1>
+<div class="tabs">
+  <div class="tab active" onclick="showTab('semanal')">📅 Semanal</div>
+  <div class="tab" onclick="showTab('mensual')">🗓️ Mensual</div>
+</div>
+<div id="semanal" class="section active"></div>
+<div id="mensual" class="section"></div>
+<div class="toast" id="toast"></div>
+<script>
+const DEFAULT_NAMES=['Cuenta A','Cuenta B','Cuenta C','Cuenta D','Cuenta E','Cuenta F'];
+const COLORS=['#4472C4','#ED7D31','#70AD47','#c0392b','#7030A0','#00B0F0'];
+const INIT_VAL=[9251,7637,4987,3145,2820,2558];
+const PERIODS={s:'Semana',m:'Mes'};
+function load(key,def){try{const v=localStorage.getItem(key);return v?JSON.parse(v):def;}catch(e){return def;}}
+function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
+let names=load('acc_names',[...DEFAULT_NAMES]);
+let curS=load('cur_s',[...INIT_VAL]);
+let curM=load('cur_m',[...INIT_VAL]);
+let histS=load('hist_s',[makeEntry('S1 (08/04/2026)',INIT_VAL)]);
+let histM=load('hist_m',[makeEntry('Abr 2026',INIT_VAL)]);
+function makeEntry(period,values){return{period,values:[...values],total:values.reduce((a,b)=>a+b,0)};}
+function fmt(n){return Number(n).toLocaleString('es-ES')+' €';}
+function fmtK(n){return(n/1000).toFixed(1)+'k';}
+function fmtPct(n){return(n>=0?'+':'')+n.toFixed(1)+'%';}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function renderSection(p){
+const cur=p==='s'?curS:curM;
+const hist=p==='s'?histS:histM;
+const total=cur.reduce((a,b)=>a+b,0);
+const prevTotal=hist.length>=2?hist[hist.length-2].total:hist[0].total;
+const varPct=hist.length>=2?(total-prevTotal)/prevTotal*100:0;
+const label=p==='s'?'Semanal':'Mensual';
+const maxAcc=cur.indexOf(Math.max(...cur));
+const minAcc=cur.indexOf(Math.min(...cur));
+const avgVal=total/cur.length;
+const html=`
+<div class="total-box">
+<div class="label">Patrimonio Total</div>
+<div class="amount">${fmt(total)}</div>
+<div class="sublabel">${hist.length>1?fmtPct(varPct)+' vs período anterior':'Período inicial'}</div>
+</div>
+<div class="stats">
+<div class="stat-card"><div class="stat-val" style="color:${COLORS[maxAcc]}">${fmtK(cur[maxAcc])}</div><div class="stat-label">Mayor: ${names[maxAcc]}</div></div>
+<div class="stat-card"><div class="stat-val">${hist.length}</div><div class="stat-label">Registros</div></div>
+<div class="stat-card"><div class="stat-val" style="color:${COLORS[minAcc]}">${fmtK(cur[minAcc])}</div><div class="stat-label">Menor: ${names[minAcc]}</div></div>
+<div class="stat-card"><div class="stat-val">${fmtK(avgVal)}</div><div class="stat-label">Media por cuenta</div></div>
+</div>
+${renderChart(hist)}
+<div class="accounts">
+${cur.map((v,i)=>`<div class="acc-card" style="background:${COLORS[i]}"><input class="acc-name-input" value="${names[i]}" maxlength="12" onchange="updateName(${i},this.value)" placeholder="Cuenta ${i+1}"/><input class="acc-val-input" type="number" value="${v}" inputmode="numeric" onchange="updateVal('${p}',${i},this.value)" onfocus="this.select()"/><div class="acc-pct">${((v/total)*100).toFixed(1)}% del total</div></div>`).join('')}
+</div>
+<div class="btn-row">
+<button class="btn btn-green" onclick="addEntry('${p}')">➕ Registrar ${label}</button>
+${hist.length>1?`<button class="btn btn-red" style="flex:0 0 44px;padding:0" onclick="deleteLastEntry('${p}')">🗑️</button>`:''}
+</div>
+<div class="table-wrap"><table>
+<thead><tr><th>${PERIODS[p]}</th>${names.map(n=>`<th>${n.substring(0,4)}</th>`).join('')}<th>Total</th><th>Var%</th></tr></thead>
+<tbody>${hist.map((row,i)=>{const prev=i>0?hist[i-1].total:null;const vp=prev!==null?(row.total-prev)/prev*100:null;const cls=vp===null?'':vp>0?'var-pos':vp<0?'var-neg':'var-neu';const vpStr=vp===null?'-':`<span class="${cls}">${fmtPct(vp)}</span>`;return`<tr><td><b>${row.period}</b></td>${row.values.map(v=>`<td>${fmtK(v)}</td>`).join('')}<td><b>${fmtK(row.total)}</b></td><td>${vpStr}</td></tr>`;}).join('')}</tbody>
+</table></div>
+<button class="btn" style="background:#6c757d;margin-top:12px;font-size:.8rem" onclick="toggleExport('${p}')">📤 Exportar CSV</button>
+<div class="export-area" id="export-${p}">${buildCSV(hist)}</div>
+<p class="save-note">💾 Datos guardados localmente en este dispositivo</p>`;
+document.getElementById(p==='s'?'semanal':'mensual').innerHTML=html;}
+function renderChart(hist){if(hist.length<2)return'';const recent=hist.slice(-8);const vals=recent.map(r=>r.total);const mx=Math.max(...vals);const mn=Math.min(...vals);const range=mx-mn||1;const bars=recent.map((r,i)=>{const h=Math.max(8,((r.total-mn)/range)*42+8);const isLast=i===recent.length-1;return`<div style="flex:1;display:flex;flex-direction:column;align-items:center"><div class="bar" style="height:${h}px;background:${isLast?'#27ae60':'#4472C4'};width:100%"></div><div class="bar-label">${r.period.substring(0,4)}</div></div>`;}).join('');return`<div class="chart-wrap"><div class="chart-title">📈 Evolución del Total</div><div class="sparkline">${bars}</div></div>`;}
+function buildCSV(hist){const header=['Periodo',...names,'Total'].join(';');const rows=hist.map(r=>[r.period,...r.values,r.total].join(';'));return[header,...rows].join('\n');}
+function toggleExport(p){const el=document.getElementById('export-'+p);el.style.display=el.style.display==='block'?'none':'block';if(el.style.display==='block')toast('Mantén pulsado para copiar');}
+function updateName(idx,val){names[idx]=val.trim()||DEFAULT_NAMES[idx];save('acc_names',names);renderBoth();}
+function updateVal(p,idx,val){const cur=p==='s'?curS:curM;cur[idx]=parseInt(val)||0;save('cur_'+p,cur);renderSection(p);}
+function addEntry(p){const hist=p==='s'?histS:histM;const cur=p==='s'?curS:curM;const now=new Date();let label;if(p==='s'){label=`S${hist.length+1} (${now.toLocaleDateString('es-ES')})`;}else{label=now.toLocaleDateString('es-ES',{month:'short',year:'numeric'});if(hist.length>0&&hist[hist.length-1].period===label){hist[hist.length-1]=makeEntry(label,cur);save('hist_'+p,hist);toast('✅ Mes actualizado');renderSection(p);return;}}hist.push(makeEntry(label,cur));save('hist_'+p,hist);toast('✅ Registro guardado');renderSection(p);}
+function deleteLastEntry(p){const hist=p==='s'?histS:histM;if(hist.length<=1){toast('⚠️ No se puede borrar el primero');return;}if(!confirm('¿Borrar el último registro?'))return;hist.pop();save('hist_'+p,hist);toast('🗑️ Eliminado');renderSection(p);}
+function showTab(id){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.tab')[id==='semanal'?0:1].classList.add('active');}
+function renderBoth(){renderSection('s');renderSection('m');}
+renderSection('s');renderSection('m');
+</script>
+</body>
+</html>
